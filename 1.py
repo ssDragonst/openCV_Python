@@ -2,7 +2,7 @@ import cv2 as cv
 import numpy as np
 
 
-def video():    #视频读取
+def video():  # 视频读取
     capture = cv.VideoCapture(0)
     while True:
         re, frame = capture.read()
@@ -11,6 +11,13 @@ def video():    #视频读取
         c = cv.waitKey(1)  # 刷新频率，ms
         if c == 27:  # esc键码
             break
+
+
+def imgcreat():
+    image = np.zeros([400, 400, 3], np.uint8)
+    image[:, :, 0] = np.ones([400, 400]) * 255
+    #    image=np.ones([400,400,3])*255
+    cv.imshow("2", image)
 
 
 def get_image(path):
@@ -87,10 +94,37 @@ def selfdef_blur(path):  # 自定义卷积模板，kernel为卷积模板
     cv.waitKey(0)
 
 
+def judge(c):
+    if c < 0:
+        return 0
+    elif c > 255:
+        return 255
+    else:
+        return c
+
+
+def noise(path):  # 添加噪声，对图像的高斯模糊调用 cv.GaussianBlur
+    image = cv.imread(path)
+    l, w, c = image.shape
+    for i in range(l):
+        for j in range(w):
+            s = np.random.normal(0, 20, 3)
+            b = image[i, j, 0]
+            g = image[i, j, 1]
+            r = image[i, j, 2]
+            image[i, j, 0] = judge(b + s[0])
+            image[i, j, 1] = judge(g + s[1])
+            image[i, j, 2] = judge(r + s[2])
+    cv.imshow("noise", image)
+    cv.imshow("image", cv.imread(path))
+    return image
+    #cv.waitKey(0)
+
+
 p = "D:/Study/pyimagehandle/1/1.jpg"
-# sth_extract()
+#sth_extract()
 # cv.waitKey(0)
 # contrast_bright(p, 1, 50)
 # floodfill()
 # blur_demo(p)
-selfdef_blur(p)
+# selfdef_blur(p)
