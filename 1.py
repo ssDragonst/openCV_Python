@@ -1,5 +1,6 @@
 import cv2 as cv
 import numpy as np
+from matplotlib import pyplot as plt
 
 
 def video():  # 视频读取
@@ -118,10 +119,10 @@ def noise(path):  # 添加噪声，对图像的高斯模糊调用 cv.GaussianBlu
     cv.imshow("noise", image)
     cv.imshow("image", cv.imread(path))
     return image
-    #cv.waitKey(0)
+    # cv.waitKey(0)
 
 
-def bi_shift(path):     #高斯双边模糊与均值迁移模糊
+def bi_shift(path):  # 高斯双边模糊与均值迁移模糊
     image = cv.imread(path)
     dst1 = cv.bilateralFilter(image, 0, 100, 10)
     dst2 = cv.pyrMeanShiftFiltering(image, 10, 50)
@@ -131,12 +132,23 @@ def bi_shift(path):     #高斯双边模糊与均值迁移模糊
     cv.waitKey(0)
 
 
+def image_hist(path):  # 图像直方图
+    image = cv.imread(path)
+    color = ('b', 'g', 'r')
+    for i, cl in enumerate(color):
+        hist = cv.calcHist([image], [i], None, [256], [0, 256])
+        plt.plot(hist, color=cl)
+        plt.xlim([0, 256])
+    cv.imshow("img", image)
+    plt.show()
+
 
 p = "D:/Study/pyimagehandle/1/1.jpg"
-#sth_extract()
+# sth_extract()
 # cv.waitKey(0)
 # contrast_bright(p, 1, 50)
 # floodfill()
 # blur_demo(p)
 # selfdef_blur(p)
-bi_shift(p)
+# bi_shift(p)
+image_hist(p)
