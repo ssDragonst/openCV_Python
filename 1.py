@@ -121,6 +121,17 @@ def noise(path):  # 添加噪声，对图像的高斯模糊调用 cv.GaussianBlu
     #cv.waitKey(0)
 
 
+def bi_shift(path):     #高斯双边模糊与均值迁移模糊
+    image = cv.imread(path)
+    dst1 = cv.bilateralFilter(image, 0, 100, 10)
+    dst2 = cv.pyrMeanShiftFiltering(image, 10, 50)
+    cv.imshow("bi", dst1)
+    cv.imshow("img", image)
+    cv.imshow("shift", dst2)
+    cv.waitKey(0)
+
+
+
 p = "D:/Study/pyimagehandle/1/1.jpg"
 #sth_extract()
 # cv.waitKey(0)
@@ -128,3 +139,4 @@ p = "D:/Study/pyimagehandle/1/1.jpg"
 # floodfill()
 # blur_demo(p)
 # selfdef_blur(p)
+bi_shift(p)
