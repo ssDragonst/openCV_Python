@@ -1,5 +1,6 @@
 import cv2 as cv
 import numpy as np
+from matplotlib import pyplot as plt
 
 
 def video():  # 视频读取
@@ -118,10 +119,10 @@ def noise(path):  # 添加噪声，对图像的高斯模糊调用 cv.GaussianBlu
     cv.imshow("noise", image)
     cv.imshow("image", cv.imread(path))
     return image
-    #cv.waitKey(0)
+    # cv.waitKey(0)
 
 
-def bi_shift(path):     #高斯双边模糊与均值迁移模糊
+def bi_shift(path):  # 高斯双边模糊与均值迁移模糊
     image = cv.imread(path)
     dst1 = cv.bilateralFilter(image, 0, 100, 10)
     dst2 = cv.pyrMeanShiftFiltering(image, 10, 50)
@@ -131,12 +132,54 @@ def bi_shift(path):     #高斯双边模糊与均值迁移模糊
     cv.waitKey(0)
 
 
+def image_hist(path):  # 图像直方图
+    image = cv.imread(path)
+    color = ('b', 'g', 'r')
+    for i, cl in enumerate(color):
+        hist = cv.calcHist([image], [i], None, [256], [0, 256])
+        plt.plot(hist, color=cl)
+        plt.xlim([0, 256])
+    cv.imshow("img", image)
+    plt.show()
 
-p = "D:/Study/pyimagehandle/1/1.jpg"
-#sth_extract()
+
+def create_rgb_hist(image):  # 彩色直方图
+    h, w, ch = image.shape
+    rgbHist = np.zeros([16 * 16 * 16, 1], np.float32)
+    bsize = 16
+    for row in range(h):
+        for col in range(w):
+            b = image[row, col, 0]
+            g = image[row, col, 1]
+            r = image[row, col, 2]
+            index = np.int(b / bsize) * 16 * 16 + np.int(g / bsize) * 16 + np.int(
+                r / bsize)  # 下降成16个bin，由256*256*256降维4096
+            #    print('index:', index)
+            rgbHist[np.int(index), 0] += 1
+    return rgbHist
+
+
+def hist_compare(p1, p2):  # 直方图比较
+    img1 = cv.imread(p1)
+    img2 = cv.imread(p2)
+    hist1 = cv.calcHist([img1.ravel()], [0], None, [256], [0, 256])
+    hist2 = cv.calcHist([img2.ravel()], [0], None, [256], [0, 256])
+    #    hist1 = create_rgb_hist(img1)
+    #   hist2 = create_rgb_hist(img2)
+    m1 = cv.compareHist(hist1, hist2, cv.HISTCMP_BHATTACHARYYA)
+    m2 = cv.compareHist(hist1, hist2, cv.HISTCMP_CORREL)
+    print("巴氏距离： %s  相关系数： %s" % (m1, m2))
+
+
+p1 = "D:/Study/pyimagehandle/2/1.jpg"
+p2 = "D:/Study/pyimagehandle/2/2.jpg"
+# sth_extract()
 # cv.waitKey(0)
 # contrast_bright(p, 1, 50)
 # floodfill()
 # blur_demo(p)
 # selfdef_blur(p)
-bi_shift(p)
+# bi_shift(p)
+# image_hist(p1)
+hist_compare(p1, p2)
+cv.waitKey(0)
