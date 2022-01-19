@@ -49,6 +49,11 @@ def sth_extract():  # 颜色提取
         lower_hsv = np.array([100, 43, 46])
         upper_hsv = np.array([124, 255, 255])
         mask = cv.inRange(hsv, lower_hsv, upper_hsv)
+        mask = cv.bilateralFilter(mask, 0, 50, 10)      # 对掩膜进行双边模糊，降噪
+        # 卷积改善效果
+        kernel = cv.getStructuringElement(cv.MORPH_ELLIPSE, [7, 7])
+        mask = cv.filter2D(mask, -1, kernel)
+        #
         dst = cv.bitwise_and(frame, frame, mask=mask)
         cv.imshow("mask", mask)
         cv.imshow("track", dst)
@@ -124,7 +129,7 @@ def noise(path):  # 添加噪声，对图像的高斯模糊调用 cv.GaussianBlu
 
 def bi_shift(path):  # 高斯双边模糊与均值迁移模糊
     image = cv.imread(path)
-    dst1 = cv.bilateralFilter(image, 0, 100, 10)
+    dst1 = cv.bilateralFilter(image, 0, 20, 10)
     dst2 = cv.pyrMeanShiftFiltering(image, 10, 50)
     cv.imshow("bi", dst1)
     cv.imshow("img", image)
@@ -145,7 +150,7 @@ def image_hist(path):  # 图像直方图
 
 def create_rgb_hist(image):  # 彩色直方图
     h, w, ch = image.shape
-    rgbHist = np.zeros([16 * 16 * 16, 1], np.float32)
+    rgbhist = np.zeros([16 * 16 * 16, 1], np.float32)
     bsize = 16
     for row in range(h):
         for col in range(w):
@@ -155,13 +160,13 @@ def create_rgb_hist(image):  # 彩色直方图
             index = np.int(b / bsize) * 16 * 16 + np.int(g / bsize) * 16 + np.int(
                 r / bsize)  # 下降成16个bin，由256*256*256降维4096
             #    print('index:', index)
-            rgbHist[np.int(index), 0] += 1
-    return rgbHist
+            rgbhist[np.int(index), 0] += 1
+    return rgbhist
 
 
-def hist_compare(p1, p2):  # 直方图比较
-    img1 = cv.imread(p1)
-    img2 = cv.imread(p2)
+def hist_compare(p_1, p_2):  # 直方图比较
+    img1 = cv.imread(p_1)
+    img2 = cv.imread(p_2)
     hist1 = cv.calcHist([img1.ravel()], [0], None, [256], [0, 256])
     hist2 = cv.calcHist([img2.ravel()], [0], None, [256], [0, 256])
     #    hist1 = create_rgb_hist(img1)
@@ -171,15 +176,32 @@ def hist_compare(p1, p2):  # 直方图比较
     print("巴氏距离： %s  相关系数： %s" % (m1, m2))
 
 
-p1 = "D:/Study/pyimagehandle/2/1.jpg"
-p2 = "D:/Study/pyimagehandle/2/2.jpg"
-# sth_extract()
+def backprograme(roi_p, img_p):  # 直方图反向投影
+    roi = cv.imread(roi_p)
+    img = cv.imread(img_p)
+    hsv_roi = cv.cvtColor(roi, cv.COLOR_BGR2HSV)
+    hsv_img = cv.cvtColor(img, cv.COLOR_BGR2HSV)
+    hsv_roi_hist = cv.calcHist([hsv_roi], [0, 1], None, [32, 32], [0, 180, 0, 256])
+    cv.normalize(hsv_roi_hist, hsv_roi_hist, 0, 255, cv.NORM_MINMAX)  # 直方图归一化，把直方图的值线性调整到指定范围
+    dst = cv.calcBackProject([hsv_img], [0, 1], hsv_roi_hist, [0, 180, 0, 256], 1)
+    # 下面的卷积把分散的点连到一起
+    kernel = cv.getStructuringElement(cv.MORPH_ELLIPSE, [5, 5])  # 生成卷积核
+    dst = cv.filter2D(dst, -1, kernel)
+    # 把上面处理后的二值图像作为掩膜，进行按位操作
+    dst1 = cv.bitwise_and(img, img, mask=dst)
+    cv.imshow("1", dst1)
+
+
+p1 = "D:/Study/pyimagehandle/3/1.png"
+p2 = "D:/Study/pyimagehandle/3/2.png"
+sth_extract()
 # cv.waitKey(0)
 # contrast_bright(p, 1, 50)
 # floodfill()
 # blur_demo(p)
 # selfdef_blur(p)
-# bi_shift(p)
+# bi_shift(p1)
 # image_hist(p1)
-hist_compare(p1, p2)
-cv.waitKey(0)
+# hist_compare(p1, p2)
+# backprograme(p2, p1)
+# cv.waitKey(0)
