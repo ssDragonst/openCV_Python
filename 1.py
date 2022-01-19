@@ -170,7 +170,7 @@ def hist_compare(p_1, p_2):  # 直方图比较
     hist1 = cv.calcHist([img1.ravel()], [0], None, [256], [0, 256])
     hist2 = cv.calcHist([img2.ravel()], [0], None, [256], [0, 256])
     #    hist1 = create_rgb_hist(img1)
-    #   hist2 = create_rgb_hist(img2)
+    #    hist2 = create_rgb_hist(img2)
     m1 = cv.compareHist(hist1, hist2, cv.HISTCMP_BHATTACHARYYA)
     m2 = cv.compareHist(hist1, hist2, cv.HISTCMP_CORREL)
     print("巴氏距离： %s  相关系数： %s" % (m1, m2))
@@ -192,9 +192,22 @@ def backprograme(roi_p, img_p):  # 直方图反向投影
     cv.imshow("1", dst1)
 
 
+def match(path_1, path_2):      # 模板匹配
+    temple = cv.imread(path_1)
+    target = cv.imread(path_2)
+    tl, tw = temple.shape[: 2]
+    res = cv.matchTemplate(target, temple, cv.TM_CCOEFF_NORMED)
+    minval, maxval, minloc, maxloc = cv.minMaxLoc(res)
+    # lu: 左上角点，rd：右下角点
+    lu = maxloc     # 如果为 cv.TM_SQDIFF 系列的方法，左上角点应为minloc，其他的方法为maxloc
+    rd = [lu[0]+tw, lu[1]+tl]
+    cv.rectangle(target, lu, rd, [0, 0, 255], 2)        # 最后一个参数2为笔画粗细
+    cv.imshow("match", target)
+
+
 p1 = "D:/Study/pyimagehandle/3/1.png"
 p2 = "D:/Study/pyimagehandle/3/2.png"
-sth_extract()
+# sth_extract()
 # cv.waitKey(0)
 # contrast_bright(p, 1, 50)
 # floodfill()
@@ -204,4 +217,5 @@ sth_extract()
 # image_hist(p1)
 # hist_compare(p1, p2)
 # backprograme(p2, p1)
-# cv.waitKey(0)
+match(p2, p1)
+cv.waitKey(0)
