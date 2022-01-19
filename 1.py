@@ -49,7 +49,7 @@ def sth_extract():  # 颜色提取
         lower_hsv = np.array([100, 43, 46])
         upper_hsv = np.array([124, 255, 255])
         mask = cv.inRange(hsv, lower_hsv, upper_hsv)
-        mask = cv.bilateralFilter(mask, 0, 50, 10)      # 对掩膜进行双边模糊，降噪
+        mask = cv.bilateralFilter(mask, 0, 50, 10)  # 对掩膜进行双边模糊，降噪
         # 卷积改善效果
         kernel = cv.getStructuringElement(cv.MORPH_ELLIPSE, [7, 7])
         mask = cv.filter2D(mask, -1, kernel)
@@ -192,20 +192,38 @@ def backprograme(roi_p, img_p):  # 直方图反向投影
     cv.imshow("1", dst1)
 
 
-def match(path_1, path_2):      # 模板匹配
+def match(path_1, path_2):  # 模板匹配
     temple = cv.imread(path_1)
     target = cv.imread(path_2)
     tl, tw = temple.shape[: 2]
     res = cv.matchTemplate(target, temple, cv.TM_CCOEFF_NORMED)
     minval, maxval, minloc, maxloc = cv.minMaxLoc(res)
     # lu: 左上角点，rd：右下角点
-    lu = maxloc     # 如果为 cv.TM_SQDIFF 系列的方法，左上角点应为minloc，其他的方法为maxloc
-    rd = [lu[0]+tw, lu[1]+tl]
-    cv.rectangle(target, lu, rd, [0, 0, 255], 2)        # 最后一个参数2为笔画粗细
+    lu = maxloc  # 如果为 cv.TM_SQDIFF 系列的方法，左上角点应为minloc，其他的方法为maxloc
+    rd = [lu[0] + tw, lu[1] + tl]
+    cv.rectangle(target, lu, rd, [0, 0, 255], 2)  # 最后一个参数2为笔画粗细
     cv.imshow("match", target)
 
 
-p1 = "D:/Study/pyimagehandle/3/1.png"
+def threshold(path):  # 利用阈值二值化
+    img = cv.imread(path)
+    gary = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
+    # 下面是二值化，中间的参数130为自设阈值，加上”|“和之后的为自动设定阈值，ret为阈值，bingary为二值化后的图像
+    ret, bingary = cv.threshold(gary, 130, 255, cv.THRESH_BINARY | cv.THRESH_OTSU)
+    gary = cv.bilateralFilter(gary, 0, 20, 10)  # 双边滤波后局部二值化效果更好
+    adapt = cv.adaptiveThreshold(gary, 255, cv.ADAPTIVE_THRESH_MEAN_C, cv.THRESH_BINARY, 23, 10)  # 局部二值化
+    print(ret)
+    '''     调节窗口大小，必须先声明窗口，再设置大小，再显示窗口
+    cv.namedWindow("res", 0)
+    cv.namedWindow("adaptres", 0)
+    cv.resizeWindow("res", 347, 462)
+    cv.resizeWindow("adaptres", 347, 462)
+    '''
+    cv.imshow("res", bingary)
+    cv.imshow("adaptres", adapt)
+
+
+p1 = "D:/Study/pyimagehandle/1/1.jpg"
 p2 = "D:/Study/pyimagehandle/3/2.png"
 # sth_extract()
 # cv.waitKey(0)
@@ -217,5 +235,6 @@ p2 = "D:/Study/pyimagehandle/3/2.png"
 # image_hist(p1)
 # hist_compare(p1, p2)
 # backprograme(p2, p1)
-match(p2, p1)
+# match(p2, p1)
+threshold(p1)
 cv.waitKey(0)
