@@ -211,9 +211,9 @@ def threshold(path):  # 利用阈值二值化
     # 下面是二值化，中间的参数130为自设阈值，加上”|“和之后的为自动设定阈值，ret为阈值，bingary为二值化后的图像
     ret, bingary = cv.threshold(gary, 130, 255, cv.THRESH_BINARY | cv.THRESH_OTSU)
     gary = cv.bilateralFilter(gary, 0, 20, 10)  # 双边滤波后局部二值化效果更好
-    adapt = cv.adaptiveThreshold(gary, 255, cv.ADAPTIVE_THRESH_MEAN_C, cv.THRESH_BINARY, 23, 10)  # 局部二值化
+    adapt = cv.adaptiveThreshold(gary, 255, cv.ADAPTIVE_THRESH_MEAN_C, cv.THRESH_BINARY, 25, 10)  # 局部二值化
     print(ret)
-    '''     调节窗口大小，必须先声明窗口，再设置大小，再显示窗口
+    '''    # 调节窗口大小，必须先声明窗口，再设置大小，再显示窗口
     cv.namedWindow("res", 0)
     cv.namedWindow("adaptres", 0)
     cv.resizeWindow("res", 347, 462)
@@ -223,8 +223,37 @@ def threshold(path):  # 利用阈值二值化
     cv.imshow("adaptres", adapt)
 
 
+def pyrdown(path):         # 高斯金字塔，向下采样，pyrdown函数返回值类型为numpy.ndarray
+    img = cv.imread(path)
+    img = cv.resize(img, (512, 512))
+    level = 3
+    tem = img.copy()
+    pyrdown_img = []
+    for i in range(level):
+        res = cv.pyrDown(tem)
+        pyrdown_img.append(res)
+        tem = res.copy()
+        cv.imshow(str(i), res)
+    return pyrdown_img
+
+
+def laplace(path):      # 由高斯金字塔计算生成拉普拉斯金字塔，lpls为生成的拉普拉斯金字塔，图像尺寸要求2^n，长和宽一致
+    img = cv.imread(path)
+    img = cv.resize(img, (512, 512))
+    pyrdown_img = pyrdown(path)
+    level = len(pyrdown_img)
+    for i in range(level-1, -1, -1):
+        if i-1 < 0:
+            expand = cv.pyrUp(pyrdown_img[i], dstsize=img.shape[:2])       # dstsize,是向上采样后生成的图像大小，这里设置成和要做相减运算的图像一样大
+            lpls = cv.subtract(img, expand)
+        else:
+            expand = cv.pyrUp(pyrdown_img[i], dstsize=pyrdown_img[i-1].shape[:2])
+            lpls = cv.subtract(pyrdown_img[i-1], expand)
+        cv.imshow("lpls"+str(3-i), lpls)
+
+
 p1 = "D:/Study/pyimagehandle/1/1.jpg"
-p2 = "D:/Study/pyimagehandle/3/2.png"
+p2 = "D:/Study/pyimagehandle/1/4.jpg"
 # sth_extract()
 # cv.waitKey(0)
 # contrast_bright(p, 1, 50)
@@ -236,5 +265,7 @@ p2 = "D:/Study/pyimagehandle/3/2.png"
 # hist_compare(p1, p2)
 # backprograme(p2, p1)
 # match(p2, p1)
-threshold(p1)
+# threshold(p1)
+# pyrdown(p1)
+laplace(p1)
 cv.waitKey(0)
