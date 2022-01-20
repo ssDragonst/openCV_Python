@@ -252,6 +252,27 @@ def laplace(path):      # 由高斯金字塔计算生成拉普拉斯金字塔，
         cv.imshow("lpls"+str(3-i), lpls)
 
 
+def image_edge(path):   # 利用图像梯度提取图像边缘，sobel与拉普拉斯算子
+    img = cv.imread(path)
+    # sobel算子，sobel不理想可以用scharr
+    grad_x = cv.Sobel(img, cv.CV_32F, 1, 0)
+    grad_y = cv.Sobel(img, cv.CV_32F, 0, 1)
+    gradx = cv.convertScaleAbs(grad_x)      # 这个函数是通过线性变换，把数据转化成8位【uint8】，符合像素的0-255取值范围
+    grady = cv.convertScaleAbs(grad_y)
+    grad = cv.addWeighted(gradx, 0.5, grady, 0.5, 0)
+    # 下边为拉普拉斯
+    res = cv.Laplacian(img, cv.CV_32F)
+    rest = cv.convertScaleAbs(res)
+    # 下边为自己定义算子，用拉普拉斯为例
+    kernel = np.array([[0, 1, 0], [1, -4, 1], [0, 1, 0]])       # 此处定义的卷积核实际为4邻域拉普拉斯算子
+    res1 = cv.filter2D(img, cv.CV_32F, kernel)      # 前边对图像卷积运算时，第二个参数为-1
+    rest1 = cv.convertScaleAbs(res1)
+    # 效果显示
+    cv.imshow("grad", grad)
+    cv.imshow("laplace", rest)
+    cv.imshow("define", rest1)
+
+
 p1 = "D:/Study/pyimagehandle/1/1.jpg"
 p2 = "D:/Study/pyimagehandle/1/4.jpg"
 # sth_extract()
@@ -267,5 +288,6 @@ p2 = "D:/Study/pyimagehandle/1/4.jpg"
 # match(p2, p1)
 # threshold(p1)
 # pyrdown(p1)
-laplace(p1)
+# laplace(p1)
+image_edge(p1)
 cv.waitKey(0)
