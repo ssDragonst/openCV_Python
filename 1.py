@@ -273,7 +273,26 @@ def image_edge(path):   # 利用图像梯度提取图像边缘，sobel与拉普�
     cv.imshow("define", rest1)
 
 
-p1 = "D:/Study/pyimagehandle/1/1.jpg"
+def canny_edge(path):       # canny边缘提取
+    img = cv.imread(path)
+    blur = cv.GaussianBlur(img, [5, 5], 0)          # 提前模糊有必要，可以很好的提高Canny提取边缘的效果
+    gary = cv.cvtColor(blur, cv.COLOR_BGR2GRAY)     # 可以不用转化成灰度图，转与不转提取出的边缘区别不大
+    dst = cv.Canny(gary, 50, 150)
+    cv.imshow("canny", dst)
+
+
+def line_detect(path):      # 霍夫直线检测
+    img = cv.imread(path)
+    source = cv.Canny(img, 40, 85)       # 直线检测前必须先提取边缘
+    lines = cv.HoughLinesP(source, 1, np.pi/180, 100, minLineLength=50, maxLineGap=10)
+    for line in lines:
+        x1, y1, x2, y2 = line[0]
+        cv.line(img, [x1, y1], [x2, y2], [0, 0, 255], 2)
+    cv.imshow("line", img)
+    cv.imshow("source", source)
+
+
+p1 = "D:/Study/pyimagehandle/4/1.jpg"
 p2 = "D:/Study/pyimagehandle/1/4.jpg"
 # sth_extract()
 # cv.waitKey(0)
@@ -289,5 +308,7 @@ p2 = "D:/Study/pyimagehandle/1/4.jpg"
 # threshold(p1)
 # pyrdown(p1)
 # laplace(p1)
-image_edge(p1)
+# image_edge(p1)
+# canny_edge(p1)
+line_detect(p1)
 cv.waitKey(0)
