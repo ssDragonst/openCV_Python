@@ -324,7 +324,24 @@ def counters_find(path):     # 轮廓发现
     cv.imshow("counter", img)
 
 
-p1 = "D:/Study/pyimagehandle/4/2.jpg"
+def counter_oprate(path):       # 对轮廓进行操作
+    img = cv.imread(path)
+    img = cv.resize(img, (int(img.shape[0] / 2), int(img.shape[1] / 2)))
+    gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
+    ret, bingary = cv.threshold(gray, 0, 255, cv.THRESH_BINARY_INV | cv.THRESH_OTSU)
+    counters, heriachy = cv.findContours(bingary, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+    for i, counter in enumerate(counters):
+        x, y, w, h = cv.boundingRect(counter)       # 外接矩形
+        mm = cv.moments(counter)
+        cx = int(mm['m10'] / mm['m00'])
+        cy = int(mm['m01'] / mm['m00'])
+        cv.circle(img, (cx, cy), 3, (0, 0, 255), -1)    # 重心
+        cv.rectangle(img, (x, y), (x+w, y+h), (255, 0, 0), 2)
+    # cv.drawContours(img, counters, -1, (0, 0, 255), 2)
+    cv.imshow("img", img)
+
+
+p1 = "D:/Study/pyimagehandle/4/4.jpg"
 p2 = "D:/Study/pyimagehandle/1/4.jpg"
 # sth_extract()
 # cv.waitKey(0)
@@ -344,5 +361,6 @@ p2 = "D:/Study/pyimagehandle/1/4.jpg"
 # canny_edge(p1)
 # line_detect(p1)
 # circle_detect(p1)
-counters_find(p1)
+# counters_find(p1)
+counter_oprate(p1)
 cv.waitKey(0)
