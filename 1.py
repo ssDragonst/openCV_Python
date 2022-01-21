@@ -127,7 +127,7 @@ def noise(path):  # 添加噪声，对图像的高斯模糊调用 cv.GaussianBlu
     # cv.waitKey(0)
 
 
-def bi_shift(path):  # 高斯双边模糊与均值迁移模糊
+def bi_shift(path):  # 高斯双边滤波与均值迁移滤波
     image = cv.imread(path)
     dst1 = cv.bilateralFilter(image, 0, 20, 10)
     dst2 = cv.pyrMeanShiftFiltering(image, 10, 50)
@@ -176,7 +176,7 @@ def hist_compare(p_1, p_2):  # 直方图比较
     print("巴氏距离： %s  相关系数： %s" % (m1, m2))
 
 
-def backprograme(roi_p, img_p):  # 直方图反向投影
+def backprograme(roi_p, img_p):  # 直方图反向投影，可以用来提取某一颜色的对象或区域
     roi = cv.imread(roi_p)
     img = cv.imread(img_p)
     hsv_roi = cv.cvtColor(roi, cv.COLOR_BGR2HSV)
@@ -292,7 +292,39 @@ def line_detect(path):      # 霍夫直线检测
     cv.imshow("source", source)
 
 
-p1 = "D:/Study/pyimagehandle/4/1.jpg"
+def circle_detect(path):        # 霍夫圆检测，对噪声非常敏感，需要进行均值迁移滤波，调节参数达到最好效果
+    img = cv.imread(path)
+    dst = cv.pyrMeanShiftFiltering(img, 10, 100)
+    dst = cv.cvtColor(dst, cv.COLOR_BGR2GRAY)
+    circles = cv.HoughCircles(dst, cv.HOUGH_GRADIENT, 1, 20, None, 50, 30)
+    # print(type(circles))      # 调试需要，看参数类型
+    # print(circles)
+    for i in circles[0]:
+        cv.circle(img, [int(i[0]), int(i[1])], int(i[2]), [0, 0, 255], 2)        # 圆心半径都必须是整数emmmm
+        cv.circle(img, [int(i[0]), int(i[1])], 2, [255, 0, 0], 2)
+    cv.imshow("canny", dst)
+    cv.imshow("img", img)
+
+
+def counters_find(path):     # 轮廓发现
+    img = cv.imread(path)
+    # blur = cv.GaussianBlur(img, (3, 3), 0)
+    gary = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
+    gary = cv.bilateralFilter(gary, 0, 20, 10)
+    # ret, bingard = cv.threshold(gary, 0, 255, cv.THRESH_BINARY | cv.THRESH_OTSU)        # 二值化函数
+    bingard = cv.adaptiveThreshold(gary, 255, cv.ADAPTIVE_THRESH_MEAN_C, cv.THRESH_BINARY, 25, 10)
+    # 上面都是进行调试得到一个比较好的二值化图形，方便进行轮廓发现，不同的方法适用于不同的图像
+    counters, heriachy = cv.findContours(bingard, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
+    cv.drawContours(img, counters, -1, (0, 0, 255), 2)
+    ''' 下边是用循环显示，一般用上边的方法把counteridx赋值-1即可输出所有轮廓
+    for i, counter in enumerate(counters):
+        cv.drawContours(img, counters, i, (0, 0, 255), 2)
+    '''
+    cv.imshow("bingard", bingard)
+    cv.imshow("counter", img)
+
+
+p1 = "D:/Study/pyimagehandle/4/2.jpg"
 p2 = "D:/Study/pyimagehandle/1/4.jpg"
 # sth_extract()
 # cv.waitKey(0)
@@ -310,5 +342,7 @@ p2 = "D:/Study/pyimagehandle/1/4.jpg"
 # laplace(p1)
 # image_edge(p1)
 # canny_edge(p1)
-line_detect(p1)
+# line_detect(p1)
+# circle_detect(p1)
+counters_find(p1)
 cv.waitKey(0)
