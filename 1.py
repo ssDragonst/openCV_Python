@@ -395,6 +395,13 @@ def watershed(path):        # 分水岭算法!!!!!前边进行形态学操作时
     # ——————上面的这些步骤就生成了分水岭算法所需的mark，下面进行分水岭算法
     # save(marks, 1)
     marks = cv.watershed(img, marks)        # 分水岭算法中边界被标记为-1
+    # 下面这部分简单的处理了算法会把图像边界也标记为前景边界的问题，人为改成1，更严谨的做法是进行判断，把图像边界上标为-1的值改为1
+    marks[0] = np.ones(marks[0].shape)
+    marks[len(marks)-1] = np.ones(marks[len(marks)-1].shape)
+    for i, mark in enumerate(marks):
+        mark[0] = 1
+        mark[len(mark)-1] = 1
+    # ————————————————————————————————
     img[marks == -1] = [0, 0, 255]
     # save(marks, 2)
     cv.imshow("1", img)
