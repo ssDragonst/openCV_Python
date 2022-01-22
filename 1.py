@@ -312,15 +312,15 @@ def counters_find(path):     # 轮廓发现
     gary = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
     gary = cv.bilateralFilter(gary, 0, 20, 10)
     # ret, bingard = cv.threshold(gary, 0, 255, cv.THRESH_BINARY | cv.THRESH_OTSU)        # 二值化函数
-    bingard = cv.adaptiveThreshold(gary, 255, cv.ADAPTIVE_THRESH_MEAN_C, cv.THRESH_BINARY, 25, 10)
+    binary = cv.adaptiveThreshold(gary, 255, cv.ADAPTIVE_THRESH_MEAN_C, cv.THRESH_BINARY, 25, 10)
     # 上面都是进行调试得到一个比较好的二值化图形，方便进行轮廓发现，不同的方法适用于不同的图像
-    counters, heriachy = cv.findContours(bingard, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
+    counters, heriachy = cv.findContours(binary, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
     cv.drawContours(img, counters, -1, (0, 0, 255), 2)
     ''' 下边是用循环显示，一般用上边的方法把counteridx赋值-1即可输出所有轮廓
     for i, counter in enumerate(counters):
         cv.drawContours(img, counters, i, (0, 0, 255), 2)
     '''
-    cv.imshow("bingard", bingard)
+    cv.imshow("bingard", binary)
     cv.imshow("counter", img)
 
 
@@ -328,8 +328,8 @@ def counter_oprate(path):       # 对轮廓进行操作
     img = cv.imread(path)
     img = cv.resize(img, (int(img.shape[0] / 2), int(img.shape[1] / 2)))
     gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
-    ret, bingary = cv.threshold(gray, 0, 255, cv.THRESH_BINARY_INV | cv.THRESH_OTSU)
-    counters, heriachy = cv.findContours(bingary, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+    ret, binary = cv.threshold(gray, 0, 255, cv.THRESH_BINARY_INV | cv.THRESH_OTSU)
+    counters, heriachy = cv.findContours(binary, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
     for i, counter in enumerate(counters):
         x, y, w, h = cv.boundingRect(counter)       # 外接矩形
         mm = cv.moments(counter)
@@ -341,7 +341,75 @@ def counter_oprate(path):       # 对轮廓进行操作
     cv.imshow("img", img)
 
 
-p1 = "D:/Study/pyimagehandle/4/4.jpg"
+def erode_dilate(path):     # 腐蚀和膨胀
+    img = cv.imread(path)
+    kernel = cv.getStructuringElement(cv.MORPH_RECT, (3, 3))
+    '''   这是对灰度图像、二值图像进行膨胀和腐蚀
+    gary = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
+    ret, binary = cv.threshold(gary, 0, 255, cv.THRESH_BINARY | cv.THRESH_OTSU)
+    erode_img = cv.erode(binary, kernel)
+    dilate_img = cv.dilate(binary, kernel)
+    '''
+    # 下边是直接对彩色图像进行膨胀和腐蚀
+    erode_img = cv.erode(img, kernel)
+    dilate_img = cv.dilate(img, kernel)
+    cv.imshow("erode", erode_img)
+    cv.imshow("diliate", dilate_img)
+
+
+def open_close(path):       # 图像开闭操作，开操作是先腐蚀，再膨胀，可以去除噪声，提取特定方向的线条等；闭操作是先膨胀再腐蚀，填充闭合区域
+    img = cv.imread(path)
+    kernel = cv.getStructuringElement(cv.MORPH_RECT, (15, 15))
+    gary = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
+    ret, binary = cv.threshold(gary, 0, 255, cv.THRESH_BINARY | cv.THRESH_OTSU)
+    open = cv.morphologyEx(binary, cv.MORPH_OPEN, kernel)
+    close = cv.morphologyEx(binary, cv.MORPH_CLOSE, kernel)
+    cv.imshow("open", open)
+    cv.imshow("close", close)
+
+
+def watershed(path):        # 分水岭算法!!!!!前边进行形态学操作时应该根据图像二值化图的实际情况进行，目的是为了确定前景和背景
+    img = cv.imread(path)
+    # 二值化找到所有物体
+    blur = cv.pyrMeanShiftFiltering(img, 10, 100)
+    gary = cv.cvtColor(blur, cv.COLOR_BGR2GRAY)
+    ret, binary = cv.threshold(gary, 0, 255, cv.THRESH_BINARY | cv.THRESH_OTSU)
+    # 进行形态学操作，先去除图像中的白噪声，用开操作，再去除硬币内部的黑色区域，应该用闭操作
+    kernel = cv.getStructuringElement(cv.MORPH_RECT, (3, 3))
+    opening = cv.morphologyEx(binary, cv.MORPH_OPEN, kernel)
+    close = cv.morphologyEx(opening, cv.MORPH_CLOSE, kernel, iterations=2)
+    dilate = cv.morphologyEx(close, cv.MORPH_DILATE, kernel)    # 膨胀操作，把边界向外扩展到背景中，则剩下的区域一定是背景
+    # 距离变换,因为硬币相连，使用开闭、腐蚀膨胀不能进一步分开，故采用距离变换
+    dist = cv.distanceTransform(close, cv.DIST_L2, 3)
+    dist_output = cv.normalize(dist, 0, 1, cv.NORM_MINMAX)  # 只是归一化显示函数效果，变化到0，1之间更明显
+    # 距离变换结束，进行了进一步的分割，但仍相连，下面再用二值化函数，以距离变换结果最大值的0.6为阈值进行二值化，使硬币彻底分开
+    ret, surface = cv.threshold(dist, dist.max()*0.6, 255, cv.THRESH_BINARY)    # 这一步得到的surface肯定是硬币，作为前景
+    fg = np.uint8(surface)      # 确保值在0到255
+    # 确定未知区域：膨胀后的减去确定是硬币的fg
+    unknown = cv.subtract(dilate, fg)
+    ret, marks = cv.connectedComponents(fg)
+    marks += 1      # 用上面函数得到的marks,会把前景图fg中背景标记为0，确定的硬币区域从1开始编号，分水岭算法中0是未知区域，marks整体加一确保没有0
+    # 上边的marks里确定是硬币区域是大于1的编号，剩下作为背景的区域为1，这部分区域包括真的背景和未确定部分，未确定的区域即为上面的unknown
+    marks[unknown == 255] = 0       # 这一步把背景标记中的未知区域(unknown)的标记改为0，就使确定的背景全标记为1，未知为0，确定前景为大于1的编号
+    # 在分水岭算法中，未知区域标记为0，背景为1，前景为大于1的编号
+    # ——————上面的这些步骤就生成了分水岭算法所需的mark，下面进行分水岭算法
+    # save(marks, 1)
+    marks = cv.watershed(img, marks)        # 分水岭算法中边界被标记为-1
+    img[marks == -1] = [0, 0, 255]
+    # save(marks, 2)
+    cv.imshow("1", img)
+
+
+def save(lis, i):       # 输出分水岭中的markers用
+    p = "D:/Study/pyimagehandle/4/" + str(i) + ".txt"
+    with open(p, 'w') as f:
+        for i, s in enumerate(lis):
+            for j in range(len(s)):
+                f.write(str(s[j]))
+            f.write('\n')
+
+
+p1 = "D:/Study/pyimagehandle/4/2.jpg"
 p2 = "D:/Study/pyimagehandle/1/4.jpg"
 # sth_extract()
 # cv.waitKey(0)
@@ -362,5 +430,8 @@ p2 = "D:/Study/pyimagehandle/1/4.jpg"
 # line_detect(p1)
 # circle_detect(p1)
 # counters_find(p1)
-counter_oprate(p1)
+# counter_oprate(p1)
+# erode_dilate(p1)
+# open_close(p1)
+watershed(p1)
 cv.waitKey(0)
