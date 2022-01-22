@@ -402,7 +402,7 @@ def watershed(path):        # 分水岭算法!!!!!前边进行形态学操作时
         mark[0] = 1
         mark[len(mark)-1] = 1
     # ————————————————————————————————
-    img[marks == -1] = [0, 0, 255]
+    img[marks == -1] = [0, 0, 255]      # 这一步是numpy数组中的布尔索引操作
     # save(marks, 2)
     cv.imshow("1", img)
 
