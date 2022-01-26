@@ -46,14 +46,15 @@ def sth_extract():  # 颜色提取
             break
         cv.imshow("video", frame)
         hsv = cv.cvtColor(frame, cv.COLOR_BGR2HSV)
-        lower_hsv = np.array([100, 43, 46])
-        upper_hsv = np.array([124, 255, 255])
+        lower_hsv = np.array([35, 43, 46])
+        upper_hsv = np.array([77, 255, 255])
         mask = cv.inRange(hsv, lower_hsv, upper_hsv)
         mask = cv.bilateralFilter(mask, 0, 50, 10)  # 对掩膜进行双边模糊，降噪
         # 卷积改善效果
-        kernel = cv.getStructuringElement(cv.MORPH_ELLIPSE, [7, 7])
-        mask = cv.filter2D(mask, -1, kernel)
-        #
+        kernel = cv.getStructuringElement(cv.MORPH_RECT, [5, 5])
+        # mask = cv.filter2D(mask, -1, kernel)
+        # 用下边的形态学操作效果更好
+        mask = cv.morphologyEx(mask, cv.MORPH_OPEN, kernel)
         dst = cv.bitwise_and(frame, frame, mask=mask)
         cv.imshow("mask", mask)
         cv.imshow("track", dst)
@@ -92,7 +93,7 @@ def blur_demo(path):  # 图像模糊
 
 def selfdef_blur(path):  # 自定义卷积模板，kernel为卷积模板
     image = cv.imread(path)
-    #    kernel = np.ones([5,5],np.float32)/25      #模糊卷积模板
+    #  kernel = np.ones([5,5],np.float32)/25      #模糊卷积模板
     kernel = np.array([[0, -1, 0], [-1, 5, -1], [0, -1, 0]], np.float32)  # 锐化卷积模板
     dst = cv.filter2D(image, -1, kernel)
     cv.imshow("image", image)
@@ -176,7 +177,7 @@ def hist_compare(p_1, p_2):  # 直方图比较
     print("巴氏距离： %s  相关系数： %s" % (m1, m2))
 
 
-def backprograme(roi_p, img_p):  # 直方图反向投影，可以用来提取某一颜色的对象或区域
+def backprograme(roi_p, img_p):  # 直方图反向投影，可以用来提取某种颜色的对象或区域
     roi = cv.imread(roi_p)
     img = cv.imread(img_p)
     hsv_roi = cv.cvtColor(roi, cv.COLOR_BGR2HSV)
@@ -275,7 +276,7 @@ def image_edge(path):   # 利用图像梯度提取图像边缘，sobel与拉普�
 
 def canny_edge(path):       # canny边缘提取
     img = cv.imread(path)
-    blur = cv.GaussianBlur(img, [5, 5], 0)          # 提前模糊有必要，可以很好的提高Canny提取边缘的效果
+    blur = cv.GaussianBlur(img, [5, 5], 0)          # 提前模糊有必要，可以很好地提高Canny提取边缘的效果
     gary = cv.cvtColor(blur, cv.COLOR_BGR2GRAY)     # 可以不用转化成灰度图，转与不转提取出的边缘区别不大
     dst = cv.Canny(gary, 50, 150)
     cv.imshow("canny", dst)
@@ -362,9 +363,9 @@ def open_close(path):       # 图像开闭操作，开操作是先腐蚀，再�
     kernel = cv.getStructuringElement(cv.MORPH_RECT, (15, 15))
     gary = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
     ret, binary = cv.threshold(gary, 0, 255, cv.THRESH_BINARY | cv.THRESH_OTSU)
-    open = cv.morphologyEx(binary, cv.MORPH_OPEN, kernel)
+    opening = cv.morphologyEx(binary, cv.MORPH_OPEN, kernel)
     close = cv.morphologyEx(binary, cv.MORPH_CLOSE, kernel)
-    cv.imshow("open", open)
+    cv.imshow("open", opening)
     cv.imshow("close", close)
 
 
@@ -381,8 +382,8 @@ def watershed(path):        # 分水岭算法!!!!!前边进行形态学操作时
     dilate = cv.morphologyEx(close, cv.MORPH_DILATE, kernel)    # 膨胀操作，把边界向外扩展到背景中，则剩下的区域一定是背景
     # 距离变换,因为硬币相连，使用开闭、腐蚀膨胀不能进一步分开，故采用距离变换
     dist = cv.distanceTransform(close, cv.DIST_L2, 3)
-    dist_output = cv.normalize(dist, 0, 1, cv.NORM_MINMAX)  # 只是归一化显示函数效果，变化到0，1之间更明显
-    # 距离变换结束，进行了进一步的分割，但仍相连，下面再用二值化函数，以距离变换结果最大值的0.6为阈值进行二值化，使硬币彻底分开
+    # dist_output = cv.normalize(dist, 0, 1, cv.NORM_MINMAX)  # 只是归一化显示函数效果，变化到0，1之间更明显
+    # 距离变换结束，进行了进一步地分割，但仍相连，下面再用二值化函数，以距离变换结果最大值的0.6为阈值进行二值化，使硬币彻底分开
     ret, surface = cv.threshold(dist, dist.max()*0.6, 255, cv.THRESH_BINARY)    # 这一步得到的surface肯定是硬币，作为前景
     fg = np.uint8(surface)      # 确保值在0到255
     # 确定未知区域：膨胀后的减去确定是硬币的fg
@@ -418,7 +419,7 @@ def save(lis, i):       # 输出分水岭中的markers用
 
 p1 = "D:/Study/pyimagehandle/4/2.jpg"
 p2 = "D:/Study/pyimagehandle/1/4.jpg"
-# sth_extract()
+sth_extract()
 # cv.waitKey(0)
 # contrast_bright(p, 1, 50)
 # floodfill()
@@ -440,5 +441,5 @@ p2 = "D:/Study/pyimagehandle/1/4.jpg"
 # counter_oprate(p1)
 # erode_dilate(p1)
 # open_close(p1)
-watershed(p1)
+# watershed(p1)
 cv.waitKey(0)
