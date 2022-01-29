@@ -313,13 +313,23 @@ def counters_find(path):     # 轮廓发现
     gary = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
     gary = cv.bilateralFilter(gary, 0, 20, 10)
     # ret, bingard = cv.threshold(gary, 0, 255, cv.THRESH_BINARY | cv.THRESH_OTSU)        # 二值化函数
-    binary = cv.adaptiveThreshold(gary, 255, cv.ADAPTIVE_THRESH_MEAN_C, cv.THRESH_BINARY, 25, 10)
+    binary = cv.adaptiveThreshold(gary, 255, cv.ADAPTIVE_THRESH_MEAN_C, cv.THRESH_BINARY_INV, 25, 10)
     # 上面都是进行调试得到一个比较好的二值化图形，方便进行轮廓发现，不同的方法适用于不同的图像
-    counters, heriachy = cv.findContours(binary, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
+    counters, heriachy = cv.findContours(binary, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE)
     cv.drawContours(img, counters, -1, (0, 0, 255), 2)
     ''' 下边是用循环显示，一般用上边的方法把counteridx赋值-1即可输出所有轮廓
     for i, counter in enumerate(counters):
         cv.drawContours(img, counters, i, (0, 0, 255), 2)
+    '''
+    ''' 把物体轮廓中的部分拿出来，下面是把图像整体模糊后，把想要的硬币区域findcounter后，利用找到的轮廓，把模糊后的区域变为原图
+    mask = np.zeros([img.shape[0], img.shape[1], 1], np.uint8)
+    cv.drawContours(mask, counters, -1, 255, cv.FILLED)
+    blured = cv.GaussianBlur(img, [21, 21], 0)
+    t = cv.GaussianBlur(img, [21, 21], 0)
+    for i in range(img.shape[0]):
+        for j in range(img.shape[1]):
+            if mask[i, j, 0] == 255:
+                blured[i, j, :] = img[i, j, :]
     '''
     cv.imshow("bingard", binary)
     cv.imshow("counter", img)
@@ -405,6 +415,7 @@ def watershed(path):        # 分水岭算法!!!!!前边进行形态学操作时
     # ————————————————————————————————
     img[marks == -1] = [0, 0, 255]      # 这一步是numpy数组中的布尔索引操作
     # save(marks, 2)
+    print(marks.shape)
     cv.imshow("1", img)
 
 
@@ -419,7 +430,7 @@ def save(lis, i):       # 输出分水岭中的markers用
 
 p1 = "D:/Study/pyimagehandle/4/2.jpg"
 p2 = "D:/Study/pyimagehandle/1/4.jpg"
-sth_extract()
+# sth_extract()
 # cv.waitKey(0)
 # contrast_bright(p, 1, 50)
 # floodfill()
@@ -441,5 +452,5 @@ sth_extract()
 # counter_oprate(p1)
 # erode_dilate(p1)
 # open_close(p1)
-# watershed(p1)
+watershed(p1)
 cv.waitKey(0)
