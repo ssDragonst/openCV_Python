@@ -325,14 +325,21 @@ def counters_find(path):     # 轮廓发现
     mask = np.zeros([img.shape[0], img.shape[1], 1], np.uint8)
     cv.drawContours(mask, counters, -1, 255, cv.FILLED)
     blured = cv.GaussianBlur(img, [21, 21], 0)
-    t = cv.GaussianBlur(img, [21, 21], 0)
+    # 这里的mask实际为灰度图像，下边是用循环的方式逐像素的判断，把原来的硬币部分赋值给模糊后的图像
     for i in range(img.shape[0]):
         for j in range(img.shape[1]):
             if mask[i, j, 0] == 255:
                 blured[i, j, :] = img[i, j, :]
+    # 这里是把mask转化成二值图像masked，这样就可以用布尔索引直接更改对应区域
+    # 这两种方法得到的结果一致，用np.array_equal判断，或者用 if t.all() == blured.all()来判断
+    t = cv.GaussianBlur(img, [21, 21], 0)
+    ret, masked = cv.threshold(mask, 0, 255, cv.THRESH_BINARY | cv.THRESH_OTSU)
+    t[masked == 255] = img[masked == 255]   # 这种方法用的是二值图像，注意与灰度图的区别
     '''
     cv.imshow("bingard", binary)
     cv.imshow("counter", img)
+    cv.imshow("bl", blured)
+    cv.imshow("t", t)
 
 
 def counter_oprate(path):       # 对轮廓进行操作
@@ -448,9 +455,9 @@ p2 = "D:/Study/pyimagehandle/1/4.jpg"
 # canny_edge(p1)
 # line_detect(p1)
 # circle_detect(p1)
-# counters_find(p1)
+counters_find(p1)
 # counter_oprate(p1)
 # erode_dilate(p1)
 # open_close(p1)
-watershed(p1)
+# watershed(p1)
 cv.waitKey(0)
